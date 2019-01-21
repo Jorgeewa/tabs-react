@@ -1,107 +1,51 @@
 import React, { Component } from 'react';
-import Tab from '../components/tab';
-import TabContent from '../components/tab-content';
-import {DragDropContext, Droppable} from 'react-beautiful-dnd';
+import Tab from '../components/tab/tab';
 import _ from 'lodash';
 import {connect} from 'react-redux';
-import {getTabs} from '../actions/index';
+import {getTabs, setActiveTab, hideTab, addNewTab, saveAllTabs, updateTabsOnDrop} from '../actions/index';
 import {bindActionCreators} from 'redux';
-import axios from 'axios';
 
+let dragId = null;
 class Tabs extends Component {
 	
 	constructor(props){
 		super(props);
 
 		this.state = {
-			currentActiveKey: 0,
-			tabArray: [],
-			tabName: [],
-			tabId: [],
-			showTabs: [], //remember to change this
 			tabWidth: 0,
-			rowWidth: 0,
-			saved: false
+			rowWidth: 0
 		};
-		
-		this.setActive = this.setActive.bind(this);
-		this.setTabNumber = this.setTabNumber.bind(this);
-		this.hideTab = this.hideTab.bind(this);
-		this.addNewTab = this.addNewTab.bind(this);
 	}
 	
 	componentDidMount () {
-		let { clientWidth } = this.refs.tab_row;
+		this.props.getTabs();
+		const {clientWidth} = this.refs.tab_row;
 		this.setState({
 			rowWidth: clientWidth
 		});
-		this.props.getTabs();
-		//this.calculateTabWidth(clientWidth);
+		this.calculateTabWidth(clientWidth);
 	}
 	
-	componentDidUpdate(prevProps){
-		if(this.state.tabArray.length == 0){
-			let { clientWidth } = this.refs.tab_row;
-			const id = this.props.tabs.map((name)=>{
-				return name.tab.id;
-			});
-			const name = this.props.tabs.map((name)=>{
-				return name.tab.name;
-			});	
-			this.setState({
-				tabArray: id,
-				tabName: name,
-				tabId: id,
-				showTabs: [true, true, true], //remember to change this
-				rowWidth: clientWidth
-			}, this.calculateTabWidth.bind(this, clientWidth));
+	componentDidUpdate (prevProps) {
+		if(this.props.tabsData.showTabs != prevProps.tabsData.showTabs){
+			this.calculateTabWidth(this.state.rowWidth);
 		}
 	}
-	setTabNumber(number){
-		this.setState({
-			tabNumber: number
-		});
+	setActive = (key) => {
+		this.props.setActiveTab(key);
 	}
 	
-	setActive (key){
-		if(this.state.currentActiveKey != key){
-			this.setState({
-				currentActiveKey: key 
-			});
-		}
+	hideTab = (key) => {
+		this.props.hideTab(key);
 	}
 	
-	hideTab(key){
-		let showTabs = this.state.showTabs;
-		showTabs[key] = false;
-		this.setState({
-			showTabs: showTabs
-		});
-		this.calculateTabWidth(this.state.rowWidth);
+	addNewTab = () => {
+		this.props.addNewTab();
 	}
 	
-	addNewTab(){
-		
-		let tabArray = this.state.tabArray;
-		if(this.state.showTabs.filter((element)=>{return element == true}).length >= 10){
-			return;
-		}
-		let showTabs = this.state.showTabs;
-		let name = this.state.tabName;
-		tabArray.push(this.state.tabArray.length);
-		showTabs.push(true);
-		name.push('Untitled');
-		this.setState({
-			tabArray: tabArray,
-			showTabs: showTabs,
-			tabName: name,
-			currentActiveKey: this.state.tabArray.length - 1
-		});
-		this.calculateTabWidth(this.state.rowWidth);
-	}
-	
-	calculateTabWidth(rowWidth){
-		let tabLength = this.state.showTabs.filter((element)=>{return element == true}).length;
+	calculateTabWidth = (rowWidth) => {
+		let tabLength = this.props.tabsData.tabArray.length;
+		tabLength = Math.max(3, tabLength);
 		let tabWidth = rowWidth - (tabLength * 10) - 80;
 		tabWidth = tabWidth/tabLength;
 		this.setState({
@@ -110,118 +54,105 @@ class Tabs extends Component {
 		
 	}
 	
-	onDragEnd = result =>{
-		const {destination, source, draggableId} = result;
-		if(!destination){
-			return;
-		}
-		
-		if(
-			destination.droppableId === source.droppableId && 
-			destination.index === source.index
-		){
-			return;
-		}
-		
-		const column = source.droppableId;
-		let tabs = this.state.tabArray;
-		let visibility = this.state.showTabs;
-		let name = this.state.tabName;
-		let valueTab = tabs[source.index];
-		let valueVisible = visibility[source.index];
-		let valueName = name[source.index];
-		
-		tabs.splice(source.index, 1);
-		visibility.splice(source.index, 1);
-		name.splice(source.index, 1);
-		
-		tabs.splice(destination.index, 0, valueTab);
-		visibility.splice(destination.index, 0, valueVisible);
-		name.splice(destination.index, 0, valueName);
-		
-		this.setState({
-			tabArray: tabs,
-			showTabs: visibility,
-			tabName: name
-		});
-	}
-	
 	onSaveTabs = () => {
-		let url = `http://localhost:8181/report/save-tab-data`;
-		let tabs = JSON.stringify(this.props.tabs);
-		const data = new FormData();
-		data.append('tabs', tabs);
-		axios.post(url, data)
-		     .then(res => {
-				this.setState({
-					saved: true,
-				});
-			})
-			.catch(error => {
-			console.log(error);
+		this.props.saveAllTabs(this.props.tabsData.tabsDetails);
+	}
+		
+	handleDragStart = (e, id) => {
+		dragId = id;
+		setTimeout((_this, e)=> e.style.opacity='0.2', 0, this, e.target);
+	}
+
+	handleDragEnd = (e) => {
+		e.preventDefault();
+		e.target.style.opacity = '';
+	}
+
+	handleDragOver = (e) => {
+		e.preventDefault();
+		e.target.style.opacity = '0.2';
+	}
+
+	handleDragLeave = (e) => {
+		e.target.style.opacity='';
+	}
+
+	handleDragDrop = (e, props) => {
+		this.props.updateTabsOnDrop({
+			dragId: dragId,
+			dropId: props.id,
 		});
+		e.target.style.opacity = '';
 	}
 	
 	render(){
-		let tabs = this.state.tabArray.map((tabIndex, visibilityIndex)=>{
+		if(this.props.tabsData.tabsDetails.length != 0){
+			let tabs = this.props.tabsData.tabArray.map((tabIndex, index)=>{
+				return (
+					<Tab 
+						key={tabIndex}
+						id={tabIndex}
+						onClickTab={this.setActive} 
+						activeKey={this.props.tabsData.currentActiveKey}
+						onClickClose={this.hideTab}
+						onSaveTabs={this.saveTabs}
+						tabWidth = {this.state.tabWidth}
+						rowWidth = {this.state.rowWidth}
+						name= {this.props.tabsData.tabName[index]}
+						handleDragDropEvents={
+							{		
+									handleDragStart: this.handleDragStart,
+									handleDragEnd: this.handleDragEnd,
+									handleDragOver: this.handleDragOver,
+									handleDragLeave: this.handleDragLeave,
+									handleDragDrop: this.handleDragDrop
+							}
+						}
+					/>
+				);
+			})
 			return (
-				<Tab 
-					key={tabIndex}
-					uniqueKey={tabIndex}
-					keyNumber={visibilityIndex} 
-					onClickTab={this.setActive} 
-					activeKey={this.state.currentActiveKey}
-					onClickClose={this.hideTab}
-					onSaveTabs={this.saveTabs}
-					visibility = {this.state.showTabs[visibilityIndex]}
-					tabWidth = {this.state.tabWidth}
-					rowWidth = {this.state.rowWidth}
-					name= {this.state.tabName[visibilityIndex]}
-				/>
-			);
-		})
-		return (
-			
-			<div className="row">
-				<DragDropContext
-					onDragEnd={this.onDragEnd}
-				>
+
+				<div className="row">
 					<div className="tab-row" ref="tab_row" style={{width: "100%"}}>
-						<Droppable droppableId='tabs' direction="horizontal">
-							{(provided)=>(
-								<div
-									ref={provided.innerRef}
-									{...provided.droppableProps}
-									className="test-this-chit"
-								>
-									{tabs}
-									{provided.placeholder}
-								</div>
-							)}
-						</Droppable>
+						<div
+							className="test-this-chit"
+						>
+							{tabs}
+						</div>
+						<div className= "float-right">
 							<div className="add-tab" onClick={()=>this.addNewTab()}>
 								&#43;
 							</div>
-							<div className={this.state.saved == true ? 'glyphicon save-tab glyphicon-floppy-saved' :'glyphicon save-tab glyphicon-floppy-remove'} onClick={()=>this.onSaveTabs()}>
+							<div 
+							className={this.props.tabsData.saved == true ? 'glyphicon save-tab glyphicon-floppy-saved' :'glyphicon save-tab glyphicon-floppy-remove'} 
+							onClick={this.props.tabsData.saved == false ? ()=>this.onSaveTabs() : null }>
 							</div>
+						</div>
 					</div>
-				</DragDropContext>
-				<TabContent activeTab={this.state.currentActiveKey} data={this.props.tabs} tabDetails={{"id":this.state.currentActiveKey, "name":this.state.tabName[this.state.currentActiveKey]}}/>
-			</div>
-		);
+				</div>
+			);
+		} else {
+			return <div ref="tab_row" style={{width: "100%"}}></div>
+		}
 	}
 }
 
 
 function mapStateToProps(state){
 	return {
-		tabs: state.tabs
+		tabsData: state.tabsData
 	}
 }
 
 function mapDispatchToProps(dispatch){
 	return bindActionCreators({
 		getTabs: getTabs,
+		setActiveTab: setActiveTab,
+		hideTab: hideTab,
+		addNewTab: addNewTab,
+		saveAllTabs: saveAllTabs,
+		updateTabsOnDrop: updateTabsOnDrop
 	}, dispatch);
 }
 	

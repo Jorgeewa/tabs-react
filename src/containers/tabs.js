@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import Tab from '../components/tab/tab';
 import _ from 'lodash';
 import {connect} from 'react-redux';
-import {getTabs, setActiveTab, hideTab, addNewTab, saveAllTabs, updateTabsOnDrop} from '../actions/index';
+import {init, setActiveTab, hideTab, addNewTab, saveAllTabs, updateTabsOnDrop} from '../actions/index';
 import {bindActionCreators} from 'redux';
 
 let dragId = null;
@@ -18,7 +18,7 @@ class Tabs extends Component {
 	}
 	
 	componentDidMount () {
-		this.props.getTabs();
+		this.props.init();
 		const {clientWidth} = this.refs.tab_row;
 		this.setState({
 			rowWidth: clientWidth
@@ -147,7 +147,7 @@ function mapStateToProps(state){
 
 function mapDispatchToProps(dispatch){
 	return bindActionCreators({
-		getTabs: getTabs,
+		init: init,
 		setActiveTab: setActiveTab,
 		hideTab: hideTab,
 		addNewTab: addNewTab,

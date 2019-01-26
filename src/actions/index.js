@@ -1,10 +1,13 @@
 import axios from 'axios';
+import * as Tabs from '../utils/tabs';
 
+export const INIT = 'INIT';
 export const ADD_OBSERVABLE = 'ADD_OBSERVABLE';
 export const REMOVE_OBSERVABLE = 'REMOVE_OBSERVABLE';
-export const FETCH_CUSTOM_TABS = 'FETCH_CUSTOM_TABS';
-export const FETCH_CHART_DATA = 'FETCH_CHART_DATA';
-export const FETCH_FORM_PARAMS = 'FETCH_FORM_PARAMS';
+export const SET_TABS = 'SET_TABS';
+export const SET_CHART_DATA = 'FETCH_CHART_DATA';
+export const CHART_LOADED = 'CHART_LOADED';
+export const SET_FORM_PARAMS = 'SET_FORM_PARAMS';
 export const INIT_TAB_DETAILS = 'EXTRACT_TAB_DETAILS';
 export const SET_ACTIVE_TAB = 'SET_ACTIVE_TAB';
 export const HIDE_TAB = 'HIDE_TAB';
@@ -14,12 +17,14 @@ export const UPDATE_TABS_ON_DROP = 'UPDATE_TABS_ON_DROP';
 export const EXTRACT_CHART_DETAILS = 'EXTRACT_CHART_DETAILS';
 export const SET_NEW_CHART_DETAIL = 'SET_NEW_CHART_DETAIL';
 export const UPDATE_CHARTS_ON_DROP = 'UPDATE_CHARTS_ON_DROP';
+export const TAB_CONTENT_LOADED = 'TAB_CONTENT_LOADED';
 
-const OBSERVABLE_CODE = {
-							'Graphs': 'past_graphs', 
-							'Heat maps': 'past_heat_maps',
-							'Scatter plots': 'past_scatter_plots'
-						}
+
+export function init(){
+	return {
+		type: INIT
+	}
+}
 
 export function addObservable(data){
 	return {
@@ -35,27 +40,24 @@ export function removeObservable(data){
 	}
 }
 
-export function getTabs(){
-	const url = '/report/get-tabs';
-	const req = axios.get(url,{ headers: { 'content-type': 'application/x-www-form-urlencoded' }});
+export function setTabs(res){	
+	let tabs = (res && res.data) ? JSON.parse(res.data.tabs) : Tabs.defaultData;
 	return {
-		type: FETCH_CUSTOM_TABS,
-		payload: req
+		type: SET_TABS,
+		tabs: tabs
 	}
 }
 
-export function fetchChartData(data){
-	let roundId = data.roundId;
-	let observableName = data.observableName;
-	let observableCode = OBSERVABLE_CODE[data.typeOfChart];
-	const url = `/report/get-chart-data?roundId=${roundId}&observableName=${observableName}&observableCode=${observableCode}`;
-	const req = axios.get(url,{ headers: { 'content-type': 'application/x-www-form-urlencoded' }});
+export function chartLoaded(data){
 	return {
-		type: FETCH_CHART_DATA,
-		payload: req,
-		meta: {
-			chartId: `${data.roundId}_${data.observableName}`
+		type: CHART_LOADED,
+		data: {
+			data: data,
+			meta: {
+				chartId: `${data.roundId}_${data.observableName}`
+			}
 		}
+
 	}
 }
 
@@ -92,12 +94,16 @@ export function saveAllTabs(tabs){
 	
 }
 
-export function fetchFormParams(){
-	let url = `/report/get-report-form-params`;
-	let request = axios.get(url,{ headers: { 'content-type': 'application/x-www-form-urlencoded' }});
+export function setFormParams(res){
 	return {
-		type: FETCH_FORM_PARAMS,
-		payload: request
+		type: SET_FORM_PARAMS,
+		data: res.data
+	}
+}
+
+export function tabContentLoaded(){
+	return {
+		type: TAB_CONTENT_LOADED
 	}
 }
 
@@ -105,6 +111,16 @@ export function updateTabsOnDrop(params){
 	return {
 		type: UPDATE_TABS_ON_DROP,
 		payload: params
+	}
+}
+
+export const setChartData = (actionData) => (res) => {
+	return {
+		type: SET_CHART_DATA,
+		data: res,
+		meta: {
+			chartId: `${actionData.data.roundId}_${actionData.data.observableName}`
+		}
 	}
 }
 

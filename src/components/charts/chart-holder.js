@@ -5,15 +5,6 @@ import Plot from 'react-plotly.js';
 import _ from 'lodash';
 import Chart from './Chart';
 
-const spinner = css`
-    display: block;
-    margin: 0 auto;
-    border-color: red;
-	position: relative;
-	top: 50%;
-	transform: translateY(-50%);
-`;
-
 let dragId = null;
 
 class ChartHolder extends Component {

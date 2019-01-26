@@ -5,7 +5,7 @@ import _ from 'lodash';
 import ChartHolder from '../components/charts/chart-holder';
 import {bindActionCreators} from 'redux';
 import {connect} from 'react-redux';
-import {addObservable, removeObservable, fetchFormParams, fetchChartData, setNewChartDetail, updateChartsOnDrop} from '../actions/index';
+import {addObservable, removeObservable, tabContentLoaded, chartLoaded, setNewChartDetail, updateChartsOnDrop} from '../actions/index';
 
 
 class TabContent extends Component {
@@ -24,7 +24,7 @@ class TabContent extends Component {
 			width: (clientWidth - padding)/2,
 			height: this.props.tabsData.currentActiveTabData[0].data.length/2 * 470
 		});
-		this.props.fetchFormParams();
+		this.props.tabContentLoaded();
 	}
 	
 	openModal = event => {
@@ -82,7 +82,7 @@ class TabContent extends Component {
 					width={this.state.width}
 					handleRemoveChart={this.handleRemoveChart}
 					data={this.props.chartData[`${data.roundId}_${data.observableName}`].data}
-					loadData = {this.props.fetchChartData}
+					loadData = {this.props.chartLoaded}
 					handleDrop = {this.handleDrop}
 				/>);
 			});
@@ -135,8 +135,8 @@ function mapDispatchToProps(dispatch){
 	return bindActionCreators({
 		removeObservable: removeObservable,
 		addObservable: addObservable,
-		fetchFormParams: fetchFormParams,
-		fetchChartData: fetchChartData,
+		tabContentLoaded: tabContentLoaded,
+		chartLoaded: chartLoaded,
 		setNewChartDetail: setNewChartDetail,
 		updateChartsOnDrop: updateChartsOnDrop,
 	}, dispatch);

@@ -1,17 +1,26 @@
-import {FETCH_CHART_DATA, EXTRACT_CHART_DETAILS, SET_NEW_CHART_DETAIL} from '../actions/index';
-import Data from '../../data/report-config';
-
-let initialState = extractChartDetails(Data.tabs);
+import {SET_CHART_DATA, EXTRACT_CHART_DETAILS, SET_NEW_CHART_DETAIL, SET_TABS, CHART_LOADED, setChartData} from '../actions/index';
+import * as Chart from '../utils/chart';
+import { loop, Cmd } from 'redux-loop';
 
 export default function (state = initialState, action){
 	let chartId = null;
 	switch(action.type){
+		case SET_TABS:
+			return Chart.extractChartDetails(action.tabs);
 		case EXTRACT_CHART_DETAILS:
-			return extractChartDetails(action.payload)
-		case FETCH_CHART_DATA:
+			return Chart.extractChartDetails(action.payload)
+		case CHART_LOADED:
+			return loop(
+				{...state},
+				Cmd.run(Chart.fetchData, {
+					successActionCreator: setChartData(action.data),
+					args: [action.data]
+				})
+			);		
+		case SET_CHART_DATA:
 			chartId = action.meta.chartId;
-			if(!action.payload.data.error){
-				let parsedData = parseData(action.payload.data, state[chartId].type);
+			if(!action.data.data.error){
+				let parsedData = Chart.parseData(action.data.data, state[chartId].type);
 				return { ...state, [chartId]: {
 												type: state[chartId].type,
 												data: parsedData
@@ -34,29 +43,3 @@ export default function (state = initialState, action){
 	}
 }
 
-function extractChartDetails(tabsData){
-	let chartData = {};
-	tabsData.forEach((tab) => {
-		tab.data.forEach((data) => {
-			chartData[`${data.roundId}_${data.observableName}`] = 
-				{
-					type: data.typeOfChart,
-					data: {
-
-					}
-				}
-			})
-	});
-	return chartData;
-}
-
-function parseData(data, type){
-	if(type == 'Graphs'){
-		return {
-			x: JSON.parse(data.measurement.split("\n")[0]),
-			y: JSON.parse(data.measurement.split("\n")[1])
-		}
-	} else {
-		return JSON.parse((data.measurement))
-	}
-}

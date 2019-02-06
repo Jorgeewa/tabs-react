@@ -1,6 +1,14 @@
-import {INIT, ADD_OBSERVABLE, REMOVE_OBSERVABLE, SET_TABS, setTabs, INIT_TAB_DETAILS, SET_ACTIVE_TAB, HIDE_TAB, ADD_NEW_TAB, SAVE_ALL_TABS, EXTRACT_CHART_DETAILS, UPDATE_TABS_ON_DROP, UPDATE_CHARTS_ON_DROP} from '../actions/index';
+import {
+	INIT, ADD_OBSERVABLE, REMOVE_OBSERVABLE, 
+	SET_TABS, setTabs, INIT_TAB_DETAILS, SET_ACTIVE_TAB, 
+	HIDE_TAB, ADD_NEW_TAB, EXTRACT_CHART_DETAILS, 
+	UPDATE_TABS_ON_DROP, UPDATE_CHARTS_ON_DROP, SAVE_ALL_TABS_CLICKED,
+	SAVE_ALL_TABS_SUCCESS, SAVE_ALL_TABS_FAILURE, saveAllTabsSuccess,
+	saveAllTabsFailure, UPDATE_TAB_NAME, UPDATE_CHART_POSITION
+} from '../actions/index';
 import { loop, Cmd } from 'redux-loop';
 import * as Tabs from '../utils/tabs';
+import * as Chart from '../utils/chart';
 
 export default function(state, action){
 	let sliceTabArray, sliceTabName = null;
@@ -14,47 +22,20 @@ export default function(state, action){
 				})
 			);
 		case ADD_OBSERVABLE:
-			let newTabData = null;
-			let index = state.tabsDetails.findIndex((data)=>{
-				return(data.tab.id === action.payload.id)
-			});
-			
-			if(index != -1){
-				return {
-					...state, tabsDetails: 
-					[
-					...state.tabsDetails.map((data)=>{
-						if(data.tab.id === action.payload.id){
-							newTabData = {
-								"tab": data.tab, "data" : [...data.data, action.payload.newData]
-							}
-							return newTabData;
-						} else {
-							return data
-						}
-					})
-					
-				], saved: false, currentActiveTabData: [newTabData]
-					   };
-			} else {
-				newTabData = {"tab": {"id": action.payload.id, "name": action.payload.name}, "data": [action.payload.newData]}
-				return {
-					...state, tabsDetails:
-					[...state.tabsDetails, newTabData],
-					saved: false, currentActiveTabData: [newTabData]
-				};
+			let newState = Tabs.addObservable(state.tabsDetails, action.payload);
+			return {
+				...state,
+				tabsDetails: newState.tabsDetails,
+				currentActiveTabData: newState.currentActiveTabData,
+				saved: false
 			}
 		case REMOVE_OBSERVABLE:
-			let tabsDetails = state.tabsDetails.map((data)=>{
-						return data.tab.id === action.payload.id 
-						? {
-							"tab": data.tab, 
-							"data" : [...data.data.slice(0, action.payload.index), ...data.data.slice(action.payload.index + 1)]
-						} 
-						: data
-					});
+			let tabsDetails = Tabs.removeObservable(state.tabsDetails, action.payload);
 			return {
-				...state, tabsDetails: tabsDetails, saved: false, currentActiveTabData : Tabs.getCurrentActiveTabData(tabsDetails, action.payload.id)
+				...state, 
+				tabsDetails: tabsDetails.tabsDetails, 
+				saved: false, 
+				currentActiveTabData : Tabs.getCurrentActiveTabData(tabsDetails.tabsDetails, action.payload.id)
 			};
 			
 		case SET_TABS:
@@ -85,76 +66,76 @@ export default function(state, action){
 			if(state.tabArray.length == 1){
 				return state
 			}
-			let tabIndex = state.tabArray.findIndex((tabId)=>{ return tabId == action.payload});
-			sliceTabArray = state.tabArray.slice(); 
-			sliceTabName = state.tabName.slice(); 
-			sliceTabArray.splice(tabIndex, 1);
-			sliceTabName.splice(tabIndex, 1);
-			let removeTabId = state.tabsDetails.filter((data)=>{
-				return data.tab.id != action.payload
-			});
+			let newStateAfterRemove = Tabs.remove(state, action.payload)
 			return {
 				...state,
-				tabsDetails: removeTabId, 
-				currentActiveKey: sliceTabArray[0], 
-				currentActiveTabData: Tabs.getCurrentActiveTabData(removeTabId, sliceTabArray[0]),
-				tabArray: sliceTabArray,
-				tabName: sliceTabName,
-				saved: false
+				tabsDetails: newStateAfterRemove.tabsDetails, 
+				currentActiveKey: newStateAfterRemove.currentActiveKey, 
+				currentActiveTabData: newStateAfterRemove.currentActiveTabData,
+				tabArray: newStateAfterRemove.tabArray,
+				tabName: newStateAfterRemove.tabName,
+				saved: newStateAfterRemove.saved
 			}
 		case ADD_NEW_TAB:
-			sliceTabArray = state.tabArray.slice();
-			sliceTabName = state.tabName.slice();
-			sliceTabArray.push(state.tabArray[state.tabArray.length - 1] + 1);
-			sliceTabName.push('Untitled');
+			let addNewTab = Tabs.add(state)
 			return {
 				...state, 
-				tabArray: sliceTabArray, 
-				tabName: sliceTabName, 
-				currentActiveKey: sliceTabArray.length - 1, 
-				currentActiveTabData: [{
-					tab: {"id": sliceTabArray.length - 1, "name": 'Untitiled'},
-					data: []
-				}],
-				tabsDetails: [...state.tabsDetails, {
-					tab: {"id": sliceTabArray.length - 1, "name": 'Untitiled'},
-					data: []
-				}],
-				saved: false
+				tabArray: addNewTab.tabArray, 
+				tabName: addNewTab.tabName, 
+				currentActiveKey: addNewTab.currentActiveKey, 
+				currentActiveTabData: addNewTab.currentActiveTabData,
+				tabsDetails: addNewTab.tabsDetails,
+				saved: addNewTab.saved
 			}
-		case SAVE_ALL_TABS:
+		case SAVE_ALL_TABS_CLICKED:
+			return loop (
+				{...state},
+				Cmd.run(Tabs.saveAll, {
+					successActionCreator: saveAllTabsSuccess,
+					failActionCreator: saveAllTabsFailure,
+					args: [action.tabs]
+				})
+			
+			);
+		case SAVE_ALL_TABS_SUCCESS:
 			return {
 				...state, saved: true
 			}
+		case SAVE_ALL_TABS_FAILURE:
+			return {
+				...state
+			}
 		case UPDATE_TABS_ON_DROP:
-			let newTabArrayOrder = Tabs.arrayMove(state.tabArray, action.payload.dragId, action.payload.dropId);
-			let newTabNameOrder = Tabs.arrayMove(state.tabName, action.payload.dragId, action.payload.dropId);
+			const newTabArrayOrder = Tabs.move(state.tabArray, action.payload.dragId, action.payload.dropId);
+			const newTabNameOrder = Tabs.move(state.tabName, action.payload.dragId, action.payload.dropId);
 			return {
 				...state, tabName: newTabNameOrder, tabArray: newTabArrayOrder, saved: false
 			}
 		case UPDATE_CHARTS_ON_DROP:
-			let newArrOrder = Tabs.arrayMove(state.currentActiveTabData[0].data, action.payload.dragId, action.payload.dropId);
-			let newTabOrder = null
+			const newChartOrder = Chart.reorder(state, action.payload)
 			return {
 				...state, 
-				tabsDetails: 
-				[
-				...state.tabsDetails.map((data) => {
-					if(data.tab.id === action.payload.tabId){
-						newTabOrder = {
-							"tab": data.tab, "data": newArrOrder
-						}
-						return newTabOrder
-					} else {
-						return data
-					}
-				})
-				],
-				currentActiveTabData: [newTabOrder],
-				saved: false
+				tabsDetails: newChartOrder.tabsDetails,
+				currentActiveTabData: newChartOrder.currentActiveTabData,
+				saved: newChartOrder.saved
 				
 			}
-			
+		case UPDATE_TAB_NAME:
+			const newTabName = Tabs.changeTabName(state.tabsDetails, state.tabName, action.payload);
+			return {
+				...state,
+				tabName: newTabName.tabName,
+				tabsDetails: newTabName.tabsDetails,
+				saved: false
+			}	
+		case UPDATE_CHART_POSITION:
+			const  newChartPosition = Tabs.updateChartPosition(state.tabsDetails, action.payload);
+			return {
+				...state,
+				tabsDetails: newChartPosition.tabsDetails,
+				currentActiveTabData: newChartPosition.currentActiveTabData,
+				saved: false
+			}
 		default:
 			return state
 	}

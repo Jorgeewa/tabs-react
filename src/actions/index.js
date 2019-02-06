@@ -12,12 +12,16 @@ export const INIT_TAB_DETAILS = 'EXTRACT_TAB_DETAILS';
 export const SET_ACTIVE_TAB = 'SET_ACTIVE_TAB';
 export const HIDE_TAB = 'HIDE_TAB';
 export const ADD_NEW_TAB = 'ADD_NEW_TAB';
-export const SAVE_ALL_TABS = 'SAVE_ALL_TABS';
+export const SAVE_ALL_TABS_CLICKED = 'SAVE_ALL_TABS_CLICKED';
+export const SAVE_ALL_TABS_FAILURE = 'SAVE_ALL_TABS_FAILURE';
+export const SAVE_ALL_TABS_SUCCESS = 'SAVE_ALL_TABS_SUCCESS';
 export const UPDATE_TABS_ON_DROP = 'UPDATE_TABS_ON_DROP';
 export const EXTRACT_CHART_DETAILS = 'EXTRACT_CHART_DETAILS';
 export const SET_NEW_CHART_DETAIL = 'SET_NEW_CHART_DETAIL';
 export const UPDATE_CHARTS_ON_DROP = 'UPDATE_CHARTS_ON_DROP';
 export const TAB_CONTENT_LOADED = 'TAB_CONTENT_LOADED';
+export const UPDATE_TAB_NAME = 'UPDATE_TAB_NAME';
+export const UPDATE_CHART_POSITION = 'UPDATE_CHART_POSITION';
 
 
 export function init(){
@@ -40,8 +44,8 @@ export function removeObservable(data){
 	}
 }
 
-export function setTabs(res){	
-	let tabs = (res && res.data) ? JSON.parse(res.data.tabs) : Tabs.defaultData;
+export function setTabs(res){
+	let tabs = (res && res.data && res.data.tabs) ? JSON.parse(res.data.tabs) : Tabs.defaultData;
 	return {
 		type: SET_TABS,
 		tabs: tabs
@@ -81,19 +85,25 @@ export function addNewTab(){
 	}
 }
 
-export function saveAllTabs(tabs){
-	let url = `/report/save-tab-data`;
-	let stringifyTabs = JSON.stringify(tabs);
-	const data = new FormData();
-	data.append('tabs', stringifyTabs);
-	let request = axios.post(url, data);
+export function saveAllClicked(tabs){
 	return {
-		type: SAVE_ALL_TABS,
-		payload: request
+		type: SAVE_ALL_TABS_CLICKED,
+		tabs: tabs
 	}
 	
 }
 
+export function saveAllTabsSuccess(){
+	return {
+		type: SAVE_ALL_TABS_SUCCESS
+	}
+}
+
+export function saveAllTabsFailure(){
+	return {
+		type: SAVE_ALL_TABS_FAILURE
+	}
+}
 export function setFormParams(res){
 	return {
 		type: SET_FORM_PARAMS,
@@ -142,5 +152,22 @@ export function updateChartsOnDrop(params){
 	return {
 		type: UPDATE_CHARTS_ON_DROP,
 		payload: params
+	}
+}
+
+export function updateTabName(params){
+	return {
+		type: UPDATE_TAB_NAME,
+		payload: params
+	}
+}
+
+export function chartResized(layout, id){
+	return {
+		type: UPDATE_CHART_POSITION,
+		payload: {
+			layout: layout,
+			id: id
+		}
 	}
 }

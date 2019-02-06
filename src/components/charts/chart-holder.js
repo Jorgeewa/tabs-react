@@ -1,9 +1,15 @@
 import React, {Component} from 'react';
-import {css} from 'react-emotion';
 import GridLoader from '../spinners/grid-loader';
-import Plot from 'react-plotly.js';
 import _ from 'lodash';
 import Chart from './Chart';
+import styled from 'styled-components';
+
+const ChartChildGrid = styled.div`
+	background-color: white;
+	padding: 5px;
+	margin: 5px;
+	height: 100%;
+`;
 
 let dragId = null;
 
@@ -44,15 +50,15 @@ class ChartHolder extends Component {
 	}
 	render() {
 		return(
-			<div
-				style={{width: this.props.width}}
-				className="chart-holder"
+			<ChartChildGrid
+				index={this.props.id}
 				draggable={true}
 				onDragStart={this.handleDragStart}
 				onDragEnd={this.handleDragEnd}
 				onDragOver={this.handleDragOver}
 				onDragLeave={this.handleDragLeave}
 				onDrop={this.handleDragDrop}
+				data-grid={this.props.position}
 			>
 				<div 
 					className="chart-holder-header"
@@ -77,7 +83,7 @@ class ChartHolder extends Component {
 						/>
 					}
 				</div>
-			</div>
+			</ChartChildGrid>
 		);
 	}
 }

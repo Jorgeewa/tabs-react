@@ -41,3 +41,47 @@ export function parseData(data, type){
 		return JSON.parse((data.measurement))
 	}
 }
+
+export function move(arr, oldIndex, newIndex) {
+    if (newIndex >= arr.length) {
+        let k = newIndex - arr.length + 1;
+        while (k--) {
+            arr.push(undefined);
+        }
+    }
+    arr.splice(newIndex, 0, arr.splice(oldIndex, 1)[0]);
+    return arr;
+}
+
+export function reorder(state, dragParams){
+	
+	const currentActiveTabData = state.currentActiveTabData[0].data;
+	const dragW = currentActiveTabData[dragParams.dragId].position.w > 1;
+	const dragH = currentActiveTabData[dragParams.dragId].position.h > 1;
+	const dropW = currentActiveTabData[dragParams.dropId].position.w > 1;
+	const dropH = currentActiveTabData[dragParams.dropId].position.h > 1;
+	
+	if(dragW || dragH || dropW || dropH){
+		return state;
+	}
+	
+	let newArrOrder = move(currentActiveTabData, dragParams.dragId, dragParams.dropId);
+	let newTabOrder = null;
+	let tabsDetails = [
+				...state.tabsDetails.map((data) => {
+					if(data.tab.id === dragParams.tabId){
+						newTabOrder = {
+							"tab": data.tab, "data": newArrOrder
+						}
+						return newTabOrder
+					} else {
+						return data
+					}
+				})
+				];
+	return {
+		tabsDetails: tabsDetails,
+		currentActiveTabData: [newTabOrder],
+		saved: false
+	}
+}

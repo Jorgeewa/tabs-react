@@ -2,7 +2,7 @@ import {SET_FORM_PARAMS, TAB_CONTENT_LOADED, setFormParams} from '../actions/ind
 import { loop, Cmd } from 'redux-loop';
 import * as Modal from '../utils/modal';
 
-export default function (state = initialState, action){
+export default function (state, action){
 	switch(action.type){
 		case TAB_CONTENT_LOADED:
 			return loop (
@@ -13,7 +13,7 @@ export default function (state = initialState, action){
 			);
 			
 		case SET_FORM_PARAMS:
-			return action.formData
+			return action.data
 		default: 
 			return state
 	}

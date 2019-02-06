@@ -30,7 +30,18 @@ const initializeState = {
 					{
 						observableId: null,
 						observableName: null,
-						position: null,
+						position: {
+								"x": null, 
+								"y": null, 
+								"w" : null, 
+								"h": null, 
+								"maxH": null, 
+								"maxW": null, 
+								"minH": null, 
+								"minW": null, 
+								"isDraggable": false, 
+								"isResizable": true		
+						},
 						typeOfChart: null,
 						roundId: null
 					}

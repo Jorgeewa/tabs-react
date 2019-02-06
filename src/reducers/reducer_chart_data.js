@@ -2,7 +2,7 @@ import {SET_CHART_DATA, EXTRACT_CHART_DETAILS, SET_NEW_CHART_DETAIL, SET_TABS, C
 import * as Chart from '../utils/chart';
 import { loop, Cmd } from 'redux-loop';
 
-export default function (state = initialState, action){
+export default function (state, action){
 	let chartId = null;
 	switch(action.type){
 		case SET_TABS:

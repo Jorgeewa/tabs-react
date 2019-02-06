@@ -5,8 +5,17 @@ import _ from 'lodash';
 import ChartHolder from '../components/charts/chart-holder';
 import {bindActionCreators} from 'redux';
 import {connect} from 'react-redux';
-import {addObservable, removeObservable, tabContentLoaded, chartLoaded, setNewChartDetail, updateChartsOnDrop} from '../actions/index';
+import {addObservable, removeObservable, tabContentLoaded, chartLoaded, setNewChartDetail, updateChartsOnDrop, chartResized} from '../actions/index';
+import styled from 'styled-components';
+import RGL, { WidthProvider } from "react-grid-layout";
 
+const ReactGridLayout = WidthProvider(RGL);
+
+const ChartParentGrid = styled.div`
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	grid-template-rows: ${props => `repeat(${props.length}, 450px)`};
+`;
 
 class TabContent extends Component {
 	constructor(props){
@@ -17,12 +26,19 @@ class TabContent extends Component {
 			height: 0,
 		}
 	}
+	
+	static defaultProps = {
+		isDraggable: false,
+		isResizable: true,
+		rowHeight: 400,
+		cols: 2,
+	}
 	componentDidMount(){
 		const {clientWidth} = this.refs.tab_content;
 		const padding = 2 * 12;
 		this.setState({
 			width: (clientWidth - padding)/2,
-			height: this.props.tabsData.currentActiveTabData[0].data.length/2 * 470
+			height: (this.props.tabsData.currentActiveTabData[0].data.length/2) * 470
 		});
 		this.props.tabContentLoaded();
 	}
@@ -66,25 +82,38 @@ class TabContent extends Component {
 		this.props.updateChartsOnDrop(params);
 	}
 	
+	handleChartResize = (layout) => {
+		const id = this.props.tabsData.currentActiveTabData[0].tab.id;
+		this.props.chartResized(layout, id);
+	}
+	
 	render(){
 		if(!_.isEmpty(this.props.chartData)){
-			let chartData = this.props.tabsData.currentActiveTabData[0].data.map((data, index)=>{
+			
+			let tabsChartData = this.props.tabsData.currentActiveTabData[0].data;
+			let layout = tabsChartData.map((data) => {
+				return data.position;
+			});
+			
+			let chartData = tabsChartData.map((data, index)=>{
 				return(
-				<ChartHolder
-					key={`${this.props.tabsData.currentActiveTabData[0].tab.id}_${index}`}
-					id={index}
-					tabId={this.props.tabsData.currentActiveTabData[0].tab.id}
-					observableId={data.observableId}
-					observableName={data.observableName}
-					position={data.position}
-					typeOfChart={data.typeOfChart}
-					roundId={data.roundId}
-					width={this.state.width}
-					handleRemoveChart={this.handleRemoveChart}
-					data={this.props.chartData[`${data.roundId}_${data.observableName}`].data}
-					loadData = {this.props.chartLoaded}
-					handleDrop = {this.handleDrop}
-				/>);
+					<div key={`${this.props.tabsData.currentActiveTabData[0].tab.id}_${index}`} data-grid={data.position}>	
+						<ChartHolder
+							id={index}
+							tabId={this.props.tabsData.currentActiveTabData[0].tab.id}
+							observableId={data.observableId}
+							position={data.position}
+							observableName={data.observableName}
+							typeOfChart={data.typeOfChart}
+							roundId={data.roundId}
+							width={this.state.width}
+							handleRemoveChart={this.handleRemoveChart}
+							data={this.props.chartData[`${data.roundId}_${data.observableName}`].data}
+							loadData = {this.props.chartLoaded}
+							handleDrop = {this.handleDrop}
+						/>
+					</div>
+				);
 			});
 			return (
 					
@@ -92,7 +121,7 @@ class TabContent extends Component {
 						<ContextMenuTrigger id="context-menu" holdToDisplay={-1}>
 							<div
 								className="tab-content" ref="tab_content"
-								style={{height: this.state.height == 0 ? '100vh' : this.state.height}}
+								style={{height: Math.ceil(tabsChartData.length / 2)* 450}}
 							>
 								<Modal 
 									showModal={this.state.showModal} 
@@ -104,7 +133,15 @@ class TabContent extends Component {
 									formParams={this.props.formParams}
 									handleSubmitObservables={this.handleSubmitObservables}
 								/>
-								{chartData}
+								<ReactGridLayout
+									onResizeStop={this.handleChartResize}
+									isDraggable=  {false}
+									isResizable= {true}
+									rowHeight= {400}
+									cols= {2}
+								>
+									{chartData}
+								</ReactGridLayout>
 							</div>
 						</ContextMenuTrigger>
 						<ContextMenu id="context-menu">
@@ -139,6 +176,7 @@ function mapDispatchToProps(dispatch){
 		chartLoaded: chartLoaded,
 		setNewChartDetail: setNewChartDetail,
 		updateChartsOnDrop: updateChartsOnDrop,
+		chartResized: chartResized,
 	}, dispatch);
 }
 		

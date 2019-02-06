@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import Tab from '../components/tab/tab';
 import _ from 'lodash';
 import {connect} from 'react-redux';
-import {init, setActiveTab, hideTab, addNewTab, saveAllTabs, updateTabsOnDrop} from '../actions/index';
+import {init, setActiveTab, hideTab, addNewTab, saveAllClicked, updateTabsOnDrop, updateTabName} from '../actions/index';
 import {bindActionCreators} from 'redux';
 
 let dragId = null;
@@ -27,7 +27,7 @@ class Tabs extends Component {
 	}
 	
 	componentDidUpdate (prevProps) {
-		if(this.props.tabsData.showTabs != prevProps.tabsData.showTabs){
+		if(this.props.tabsData.tabArray != prevProps.tabsData.tabArray){
 			this.calculateTabWidth(this.state.rowWidth);
 		}
 	}
@@ -43,6 +43,17 @@ class Tabs extends Component {
 		this.props.addNewTab();
 	}
 	
+	changeTabName = (id) =>(newName) => {
+		let params = {
+			id: id,
+			name: newName.name
+		}
+		this.props.updateTabName(params);
+	}
+	
+	validateTabName = (name) => {
+		return (name.length > 3 && name.length < 15);
+	}
 	calculateTabWidth = (rowWidth) => {
 		let tabLength = this.props.tabsData.tabArray.length;
 		tabLength = Math.max(3, tabLength);
@@ -55,7 +66,7 @@ class Tabs extends Component {
 	}
 	
 	onSaveTabs = () => {
-		this.props.saveAllTabs(this.props.tabsData.tabsDetails);
+		this.props.saveAllClicked(this.props.tabsData.tabsDetails);
 	}
 		
 	handleDragStart = (e, id) => {
@@ -95,10 +106,11 @@ class Tabs extends Component {
 						onClickTab={this.setActive} 
 						activeKey={this.props.tabsData.currentActiveKey}
 						onClickClose={this.hideTab}
-						onSaveTabs={this.saveTabs}
 						tabWidth = {this.state.tabWidth}
 						rowWidth = {this.state.rowWidth}
-						name= {this.props.tabsData.tabName[index]}
+						name = {this.props.tabsData.tabName[index]}
+						changeTabName = {this.changeTabName}
+						validateTabName = {this.validateTabName}
 						handleDragDropEvents={
 							{		
 									handleDragStart: this.handleDragStart,
@@ -151,8 +163,9 @@ function mapDispatchToProps(dispatch){
 		setActiveTab: setActiveTab,
 		hideTab: hideTab,
 		addNewTab: addNewTab,
-		saveAllTabs: saveAllTabs,
-		updateTabsOnDrop: updateTabsOnDrop
+		saveAllClicked: saveAllClicked,
+		updateTabsOnDrop: updateTabsOnDrop,
+		updateTabName: updateTabName
 	}, dispatch);
 }
 	

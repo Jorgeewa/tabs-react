@@ -46,6 +46,7 @@ export default function(state, action){
 				 	currentActiveTabData: initTabs.currentActiveTabData,
 					tabArray: initTabs.tabArray,
 					tabName: initTabs.tabName,
+					position: initTabs.position,
 					saved: initTabs.saved,
 					currentActiveKey: initTabs.currentActiveKey
 			};
@@ -74,6 +75,7 @@ export default function(state, action){
 				currentActiveTabData: newStateAfterRemove.currentActiveTabData,
 				tabArray: newStateAfterRemove.tabArray,
 				tabName: newStateAfterRemove.tabName,
+				position: newStateAfterRemove.position,
 				saved: newStateAfterRemove.saved
 			}
 		case ADD_NEW_TAB:
@@ -85,6 +87,7 @@ export default function(state, action){
 				currentActiveKey: addNewTab.currentActiveKey, 
 				currentActiveTabData: addNewTab.currentActiveTabData,
 				tabsDetails: addNewTab.tabsDetails,
+				position: addNewTab.position,
 				saved: addNewTab.saved
 			}
 		case SAVE_ALL_TABS_CLICKED:
@@ -106,10 +109,13 @@ export default function(state, action){
 				...state
 			}
 		case UPDATE_TABS_ON_DROP:
-			const newTabArrayOrder = Tabs.move(state.tabArray, action.payload.dragId, action.payload.dropId);
-			const newTabNameOrder = Tabs.move(state.tabName, action.payload.dragId, action.payload.dropId);
+			const newTabOrder = Tabs.move(state.tabsDetails, state.currentActiveKey, action.payload);
 			return {
-				...state, tabName: newTabNameOrder, tabArray: newTabArrayOrder, saved: false
+				...state, 
+				tabsDetails: newTabOrder.tabsDetails, 
+				position: newTabOrder.position,
+				currentActiveTabData: newTabOrder.currentActiveTabData,
+				saved: false
 			}
 		case UPDATE_CHARTS_ON_DROP:
 			const newChartOrder = Chart.reorder(state, action.payload)

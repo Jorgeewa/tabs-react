@@ -10,18 +10,20 @@ export function fetchTabs(){
 }
 
 export function initTabs(tabs){
-	let name = [], id = [];
+	let name = [], id = [], position = [];
 	tabs.forEach((data) => {
 		name.push(data.tab.name);
 		id.push(data.tab.id);
+		position.push(data.tab.position);
 	});
 	return {
 		tabsDetails: tabs,
 		currentActiveTabData: getCurrentActiveTabData(tabs, tabs[0].tab.id),
 		tabArray: id,
 		tabName: name,
+		position: position,
 		saved: true,
-		currentActiveKey: id[0]
+		currentActiveKey: tabs[0].tab.id
 	}
 }
 
@@ -31,17 +33,6 @@ export function getCurrentActiveTabData(tabs, id){
 	});
 	
 	return currentActiveTabData;
-}
-
-export function move(arr, oldIndex, newIndex) {
-	if (newIndex >= arr.length) {
-        let k = newIndex - arr.length + 1;
-        while (k--) {
-            arr.push(undefined);
-        }
-    }
-    arr.splice(newIndex, 0, arr.splice(oldIndex, 1)[0]);
-    return arr;
 }
 
 export function addObservable(tabsDetails, tabData){
@@ -89,9 +80,11 @@ export function removeObservable(tabsDetails, newData){
 export function remove(state, id){
 	let tabIndex = state.tabArray.findIndex((tabId)=>{ return tabId == id});
 	let sliceTabArray = state.tabArray.slice(); 
-	let sliceTabName = state.tabName.slice(); 
+	let sliceTabName = state.tabName.slice();
+	let slicePosition = state.position.slice();
 	sliceTabArray.splice(tabIndex, 1);
 	sliceTabName.splice(tabIndex, 1);
+	slicePosition.splice(tabIndex, 1);
 	let removeTabId = state.tabsDetails.filter((data)=>{
 		return data.tab.id != id
 	});
@@ -101,25 +94,37 @@ export function remove(state, id){
 		currentActiveTabData: getCurrentActiveTabData(removeTabId, sliceTabArray[0]),
 		tabName: sliceTabName,
 		tabArray: sliceTabArray,
+		position: slicePosition,
 		saved: false
 	}
 }
 
 export function add(state){
+	if(state.tabName.length > 10){
+		return state;
+	}
+	
 	let sliceTabArray = state.tabArray.slice();
 	let sliceTabName = state.tabName.slice();
-	sliceTabArray.push(state.tabArray[state.tabArray.length - 1] + 1);
+	let slicePosition = state.position.slice();
+	const x = state.tabName.length;
+	const i = state.tabName.length;
+	const position = {"i": `${i}`, "x": x, "y": 0, "w" : 1, "h": 1, "maxH": 1, "maxW": 1, "minH": 1, "minW": 1, "isDraggable": true, "isResizable": false}
+	sliceTabArray.push(i);
 	sliceTabName.push('Untitled');
+	slicePosition.push(position);
+
 	return {
 		tabArray: sliceTabArray, 
 		tabName: sliceTabName, 
-		currentActiveKey: sliceTabArray.length - 1, 
+		currentActiveKey: sliceTabArray.length - 1,
+		position: slicePosition,
 		currentActiveTabData: [{
-			tab: {"id": sliceTabArray.length - 1, "name": 'Untitiled'},
+			tab: {"id": i, "name": 'Untitiled', "position": position},
 			data: []
 		}],
 		tabsDetails: [...state.tabsDetails, {
-			tab: {"id": sliceTabArray.length - 1, "name": 'Untitiled'},
+			tab: {"id": i, "name": 'Untitiled', "position": position},
 			data: []
 		}],
 		saved: false
@@ -139,9 +144,9 @@ export function changeTabName(tabsDetails, tabs, newData){
 	let sliceTabs = tabs.slice();
 	sliceTabs[newData.id] = newData.name;
 	let newTabsDetails = tabsDetails.map((data)=>{
-		if(data.tab.id === newData.id){
+		if(`${data.tab.id}` === newData.id){
 			return {
-				"tab": {"id": data.tab.id, "name": newData.name}, "data" : data.data
+				"tab": {"id": data.tab.id, "name": newData.name, "position": data.tab.position}, "data" : data.data
 			}
 		} else {
 			return data
@@ -159,7 +164,10 @@ export function updateChartPosition(tabsData, params){
 		if(data.tab.id === params.id){
 			newTabData = {
 				"tab": data.tab, "data": data.data.map((data, index) => {
-					return {...data , "position": params.layout[index]}
+					const position = params.layout.filter((data) => {
+						return data.i === `${params.id}_${index}`;
+					});
+					return {...data , "position": position[0]}
 				})
 			}
 			return newTabData;
@@ -170,5 +178,23 @@ export function updateChartPosition(tabsData, params){
 	return {
 		tabsDetails: newChartPosition,
 		currentActiveTabData: [newTabData]
+	}
+}
+
+export function move(tabsDetails, activeKey, params){
+	let newTabData = null;
+	const newTabPosition = tabsDetails.map((data) => {
+		const newPos = params.layout.filter((tab) => {
+				return tab.i === `${data.tab.id}`;
+			});
+		return {
+			"tab": { "id": data.tab.id, "name": data.tab.name, "position": newPos[0]},
+			"data": data.data
+		}
+	});
+	return {
+		tabsDetails: newTabPosition,
+		currentActiveTabData: getCurrentActiveTabData(newTabPosition, activeKey),
+		position: params.layout
 	}
 }

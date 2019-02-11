@@ -14,6 +14,7 @@ export default (props) => {
         <Plot
             data={params.data}
             layout={ params.layout }
+			style={{width: '100%', height: '100%'}}
         />
     );
 }

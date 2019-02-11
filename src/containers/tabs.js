@@ -4,33 +4,57 @@ import _ from 'lodash';
 import {connect} from 'react-redux';
 import {init, setActiveTab, hideTab, addNewTab, saveAllClicked, updateTabsOnDrop, updateTabName} from '../actions/index';
 import {bindActionCreators} from 'redux';
+import RGL, { WidthProvider } from "react-grid-layout";
+import styled from 'styled-components';
 
-let dragId = null;
-class Tabs extends Component {
-	
-	constructor(props){
-		super(props);
+const Center = styled.div `
+	justify-self: center;
+	align-self: center;
+`;
 
-		this.state = {
-			tabWidth: 0,
-			rowWidth: 0
-		};
+const AddTab = styled.div `
+	color: grey;
+	border: 1px solid grey;
+	width: 100%;
+	color: #aaa;
+	font-size: 28px;
+	font-weight: bold;
+	display: grid;
+`;
+
+
+const Save = styled.div `
+	width: 100%;
+	padding: 5px;
+	justify-self: center;
+	align-self: center;
+`;
+
+const TabsGrid = styled.div `
+	display: grid;
+	grid-template-columns: 94% 2.5% 2.5% 1%;
+	grid-template-rows: repeat(1, 40px);
+	column-gap: 10px;
+	margin-bottom: 10px;
+
+	&:hover ${Save} {
+		cursor: pointer;
 	}
+
+	&:hover ${AddTab} {
+		cursor: pointer;
+	}
+`;
+
+
+const ReactGridLayout = WidthProvider(RGL);
+
+class Tabs extends Component {
 	
 	componentDidMount () {
 		this.props.init();
-		const {clientWidth} = this.refs.tab_row;
-		this.setState({
-			rowWidth: clientWidth
-		});
-		this.calculateTabWidth(clientWidth);
 	}
 	
-	componentDidUpdate (prevProps) {
-		if(this.props.tabsData.tabArray != prevProps.tabsData.tabArray){
-			this.calculateTabWidth(this.state.rowWidth);
-		}
-	}
 	setActive = (key) => {
 		this.props.setActiveTab(key);
 	}
@@ -54,98 +78,65 @@ class Tabs extends Component {
 	validateTabName = (name) => {
 		return (name.length > 3 && name.length < 15);
 	}
-	calculateTabWidth = (rowWidth) => {
-		let tabLength = this.props.tabsData.tabArray.length;
-		tabLength = Math.max(3, tabLength);
-		let tabWidth = rowWidth - (tabLength * 10) - 80;
-		tabWidth = tabWidth/tabLength;
-		this.setState({
-			tabWidth: tabWidth
-		});
-		
-	}
 	
 	onSaveTabs = () => {
 		this.props.saveAllClicked(this.props.tabsData.tabsDetails);
 	}
 		
-	handleDragStart = (e, id) => {
-		dragId = id;
-		setTimeout((_this, e)=> e.style.opacity='0.2', 0, this, e.target);
-	}
-
-	handleDragEnd = (e) => {
-		e.preventDefault();
-		e.target.style.opacity = '';
-	}
-
-	handleDragOver = (e) => {
-		e.preventDefault();
-		e.target.style.opacity = '0.2';
-	}
-
-	handleDragLeave = (e) => {
-		e.target.style.opacity='';
-	}
-
-	handleDragDrop = (e, props) => {
-		this.props.updateTabsOnDrop({
-			dragId: dragId,
-			dropId: props.id,
-		});
-		e.target.style.opacity = '';
+	handleDragStop = (layout, oldItem, newItem, placeholder) => {
+		
+		this.props.updateTabsOnDrop(layout, oldItem, this.props.tabsData.position);
 	}
 	
 	render(){
+		//I hate the fact that react grid layout forces my ids to strings. Need to find a way around this
 		if(this.props.tabsData.tabsDetails.length != 0){
-			let tabs = this.props.tabsData.tabArray.map((tabIndex, index)=>{
+			let tabs = this.props.tabsData.position.map((pos, index)=>{
 				return (
-					<Tab 
-						key={tabIndex}
-						id={tabIndex}
-						onClickTab={this.setActive} 
-						activeKey={this.props.tabsData.currentActiveKey}
-						onClickClose={this.hideTab}
-						tabWidth = {this.state.tabWidth}
-						rowWidth = {this.state.rowWidth}
-						name = {this.props.tabsData.tabName[index]}
-						changeTabName = {this.changeTabName}
-						validateTabName = {this.validateTabName}
-						handleDragDropEvents={
-							{		
-									handleDragStart: this.handleDragStart,
-									handleDragEnd: this.handleDragEnd,
-									handleDragOver: this.handleDragOver,
-									handleDragLeave: this.handleDragLeave,
-									handleDragDrop: this.handleDragDrop
-							}
-						}
-					/>
+					<div key={pos.i} data-grid={pos}>
+						<Tab 
+							id={pos.i}
+							onClickTab={this.setActive} 
+							activeKey={this.props.tabsData.currentActiveKey}
+							onClickClose={this.hideTab}
+							name = {this.props.tabsData.tabName[index]}
+							changeTabName = {this.changeTabName}
+							validateTabName = {this.validateTabName}
+						/>
+					</div>
 				);
 			})
 			return (
 
-				<div className="row">
-					<div className="tab-row" ref="tab_row" style={{width: "100%"}}>
-						<div
-							className="test-this-chit"
-						>
-							{tabs}
-						</div>
-						<div className= "float-right">
-							<div className="add-tab" onClick={()=>this.addNewTab()}>
-								&#43;
-							</div>
-							<div 
-							className={this.props.tabsData.saved == true ? 'glyphicon save-tab glyphicon-floppy-saved' :'glyphicon save-tab glyphicon-floppy-remove'} 
-							onClick={this.props.tabsData.saved == false ? ()=>this.onSaveTabs() : null }>
-							</div>
-						</div>
-					</div>
-				</div>
+				<TabsGrid>
+					<ReactGridLayout
+						onDragStop={this.handleDragStop}
+						isDraggable=  {true}
+						isResizable= {false}
+						rowHeight= {50}
+						cols= {Math.max(this.props.tabsData.tabName.length, 4)}
+						compactType= {'horizontal'}
+					>
+						{tabs}
+					
+					</ReactGridLayout>
+					<AddTab 
+						onClick={()=>this.addNewTab()}
+					>
+						<Center>
+							&#43;
+						</Center>
+					</AddTab>
+					<Save 
+						className={this.props.tabsData.saved == true ? 'glyphicon save-tab glyphicon-floppy-saved' :'glyphicon save-tab glyphicon-floppy-remove'} 
+						onClick={this.props.tabsData.saved == false ? ()=>this.onSaveTabs() : null }
+					>
+					</Save>
+					
+				</TabsGrid>
 			);
 		} else {
-			return <div ref="tab_row" style={{width: "100%"}}></div>
+			return <div></div>
 		}
 	}
 }

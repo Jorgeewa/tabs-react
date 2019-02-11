@@ -11,6 +11,21 @@ const ChartChildGrid = styled.div`
 	height: 100%;
 `;
 
+const ChartHolderHeader = styled.div`
+	width: 100%;
+	border-top: 2px solid;
+	border-left: 2px solid;
+	border-right: 2px solid;
+	height: ${props => props.position.h > 1 ? '5%' : '10%' };
+`;
+
+
+const ChartHolderBody = styled.div`
+	width: 100%;
+	border: 2px solid;
+	height: ${props => props.position.h > 1 ? '95%' : '90%' };
+`;
+
 let dragId = null;
 
 class ChartHolder extends Component {
@@ -21,47 +36,11 @@ class ChartHolder extends Component {
 			roundId: this.props.roundId
 		})
 	}
-	handleDragStart = (e) => {
-		dragId = this.props.id;
-		setTimeout((_this, e)=> e.style.opacity='0.2', 0, this, e.target);
-	}
-	
-	handleDragEnd = (e) => {
-		e.preventDefault();
-		e.target.style.opacity = '';
-	}
-		
-	handleDragOver = (e) => {
-		e.preventDefault();
-		e.target.style.opacity = '0.2';
-	}
-	
-	handleDragLeave = (e) => {
-		e.target.style.opacity='';
-	}
-	
-	handleDragDrop = (e) => {
-		this.props.handleDrop({
-			dragId: dragId,
-			dropId: this.props.id,
-			tabId: this.props.tabId
-		});
-		e.target.style.opacity = '';
-	}
 	render() {
 		return(
-			<ChartChildGrid
-				index={this.props.id}
-				draggable={true}
-				onDragStart={this.handleDragStart}
-				onDragEnd={this.handleDragEnd}
-				onDragOver={this.handleDragOver}
-				onDragLeave={this.handleDragLeave}
-				onDrop={this.handleDragDrop}
-				data-grid={this.props.position}
-			>
-				<div 
-					className="chart-holder-header"
+			<ChartChildGrid>
+				<ChartHolderHeader
+					position={this.props.position}
 				>
 					{this.props.observableName}
 					<span
@@ -70,8 +49,10 @@ class ChartHolder extends Component {
 					> 
 							&times;
 					</span>
-				</div>
-				<div className="chart-holder-body" >
+				</ChartHolderHeader>
+				<ChartHolderBody
+					position={this.props.position}
+				>
 					{_.isEmpty(this.props.data) && <GridLoader/>}
 					{
 						!_.isEmpty(this.props.data) && 
@@ -82,7 +63,7 @@ class ChartHolder extends Component {
 							observableId={this.props.observableId}
 						/>
 					}
-				</div>
+				</ChartHolderBody>
 			</ChartChildGrid>
 		);
 	}

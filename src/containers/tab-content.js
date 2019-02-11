@@ -11,12 +11,6 @@ import RGL, { WidthProvider } from "react-grid-layout";
 
 const ReactGridLayout = WidthProvider(RGL);
 
-const ChartParentGrid = styled.div`
-	display: grid;
-	grid-template-columns: repeat(2, 1fr);
-	grid-template-rows: ${props => `repeat(${props.length}, 450px)`};
-`;
-
 class TabContent extends Component {
 	constructor(props){
 		super(props);
@@ -60,11 +54,15 @@ class TabContent extends Component {
 	}
 	
 	handleSubmitObservables = (values) => {
+		const length = this.props.tabsData.currentActiveTabData[0].data.length;
+		const x = (length % 2 == 0 ? 0 : 1);
+		const y = Math.floor(length / 2);
 		let data = {
 					   "observableId": values.observable,
 					   "roundId": values.round,
 					   "typeOfChart": values['chart-type'],
-					   "observableName": values.observable
+					   "observableName": values.observable,
+						"position": {"x": x, "y": y, "w" : 1, "h": 1, "maxH": 2, "maxW": 2, "minH": 1, "minW": 1, "isDraggable": true, "isResizable": true}
 					};
 		this.props.setNewChartDetail({
 			roundId: values.round, 
@@ -86,7 +84,11 @@ class TabContent extends Component {
 		const id = this.props.tabsData.currentActiveTabData[0].tab.id;
 		this.props.chartResized(layout, id);
 	}
-	
+
+	handleDragStop = (layout) => {
+		const id = this.props.tabsData.currentActiveTabData[0].tab.id;
+		this.props.chartResized(layout, id);
+	}
 	render(){
 		if(!_.isEmpty(this.props.chartData)){
 			
@@ -121,7 +123,7 @@ class TabContent extends Component {
 						<ContextMenuTrigger id="context-menu" holdToDisplay={-1}>
 							<div
 								className="tab-content" ref="tab_content"
-								style={{height: Math.ceil(tabsChartData.length / 2)* 450}}
+								
 							>
 								<Modal 
 									showModal={this.state.showModal} 
@@ -135,9 +137,10 @@ class TabContent extends Component {
 								/>
 								<ReactGridLayout
 									onResizeStop={this.handleChartResize}
-									isDraggable=  {false}
+									onDragStop={this.handleDragStop}
+									isDraggable=  {true}
 									isResizable= {true}
-									rowHeight= {400}
+									rowHeight= {450}
 									cols= {2}
 								>
 									{chartData}

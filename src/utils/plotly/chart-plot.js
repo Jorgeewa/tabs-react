@@ -156,9 +156,7 @@ export function graphs(x, y, width, observableId){
 		  color: 'grey',
 		}
 	  },
-		autosize: false,
-		width: width - 20,
-		height: 400,
+		autosize: true,
 		  margin: {
 			l: 50,
 			r: 50,

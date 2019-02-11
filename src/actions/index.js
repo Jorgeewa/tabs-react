@@ -117,10 +117,13 @@ export function tabContentLoaded(){
 	}
 }
 
-export function updateTabsOnDrop(params){
+export function updateTabsOnDrop(layout, oldItem){
 	return {
 		type: UPDATE_TABS_ON_DROP,
-		payload: params
+		payload: {
+			layout: layout,
+			oldItem: oldItem
+		}
 	}
 }
 

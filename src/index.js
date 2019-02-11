@@ -18,6 +18,7 @@ const initializeState = {
 		tabsDetails: [],
 		tabArray: [],
 		tabName: [],
+		position: [],
 		currentActiveKey: 0,
 		saved: false,
 		currentActiveTabData: [
@@ -25,6 +26,19 @@ const initializeState = {
 				tab: {
 					id: null,
 					name: null,
+					position: {
+							"i": null,
+							"x": null, 
+							"y": null, 
+							"w" : null, 
+							"h": null, 
+							"maxH": null, 
+							"maxW": null, 
+							"minH": null, 
+							"minW": null, 
+							"isDraggable": true, 
+							"isResizable": false	
+					}
 				},
 				data: [
 					{
@@ -39,7 +53,7 @@ const initializeState = {
 								"maxW": null, 
 								"minH": null, 
 								"minW": null, 
-								"isDraggable": false, 
+								"isDraggable": true, 
 								"isResizable": true		
 						},
 						typeOfChart: null,
